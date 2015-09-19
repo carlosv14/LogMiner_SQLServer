@@ -6,6 +6,7 @@ using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -109,27 +110,20 @@ namespace LogMiner21341140
                 values.Clear();
             }
            
-            AddValues(metadata);
+            AddValues(metadata,table);
         }
 
-        public void FillList()
+        public void CargarPrimeraParte(string sql)
         {
-            listView3.Columns.Clear();
-            List<string>info   = new List<string>();
-            listView3.Columns.Add("OPERATION");
-            listView3.Columns.Add("TRANSACTION ID");
-            listView3.Columns.Add("OBJECT");
-            listView3.Columns.Add("USER");
-            listView3.Columns.Add("BEGIN TIME");
-            listView3.Columns.Add("END TIME");
             string _connectionString = "Server=CARLOSV;Database= " + dbc.database + ";Trusted_Connection=True;MultipleActiveResultSets=True;";
-            var sql = "USE " + dbc.database + " SELECT [Operation], [Transaction ID],  SUSER_SNAME ([Transaction SID]) AS [USER], [Begin Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_BEGIN_XACT' ";
             var conn = new SqlConnection(_connectionString);
             var cmd = new SqlCommand(sql, conn);
             conn.Open();
             var reader = cmd.ExecuteReader();
             while (reader.Read())
             {
+              
+                List<string> info = new List<string>();
                 info.Add("");
                 info.Add(reader[1].ToString());
                 info.Add(table);
@@ -140,7 +134,12 @@ namespace LogMiner21341140
                 listView3.Items.Add(lvi);
                 info.Clear();
             }
-            var sql1 = "USE " + dbc.database + " SELECT [End Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_COMMIT_XACT'";
+        }
+
+        public void CargarParteDos(string sql1)
+        {
+            string _connectionString = "Server=CARLOSV;Database= " + dbc.database + ";Trusted_Connection=True;MultipleActiveResultSets=True;";
+
             var conn1 = new SqlConnection(_connectionString);
             var cmd1 = new SqlCommand(sql1, conn1);
             conn1.Open();
@@ -151,8 +150,11 @@ namespace LogMiner21341140
                     listView3.Items[j].SubItems[listView3.Items[j].SubItems.Count - 1].Text = reader1[0].ToString();
             }
 
-            var sql2 = "USE " + dbc.database +
-                       " SELECT [Operation] FROM sys.fn_dblog(NULL, NULL) WHERE AllocUnitName ='dbo.TEST' ;";
+        }
+
+        public void CargarParteTres(string sql2)
+        {
+            string _connectionString = "Server=CARLOSV;Database= " + dbc.database + ";Trusted_Connection=True;MultipleActiveResultSets=True;";
             var conn2 = new SqlConnection(_connectionString);
             var cmd2 = new SqlCommand(sql2, conn2);
             conn2.Open();
@@ -160,10 +162,93 @@ namespace LogMiner21341140
             int contador = 0;
             while (reader2.Read())
             {
-                    listView3.Items[contador].SubItems[0].Text = reader2[0].ToString();
+                listView3.Items[contador].SubItems[0].Text = reader2[0].ToString();
                 contador++;
             }
 
+        }
+        public void FillList()
+        {
+            listView3.Columns.Clear();
+            List<string>info   = new List<string>();
+            listView3.Columns.Add("OPERATION");
+            listView3.Columns.Add("TRANSACTION ID");
+            listView3.Columns.Add("OBJECT");
+            listView3.Columns.Add("USER");
+            listView3.Columns.Add("BEGIN TIME");
+            listView3.Columns.Add("END TIME");
+            List<string> toCompare = null;
+            string _connectionString ="Server=CARLOSV;Database= " + dbc.database + ";Trusted_Connection=True;MultipleActiveResultSets=True;";
+
+            if (!dbc.alltables)
+            {
+                toCompare = new List<string>();
+                var query = "USE " + dbc.database +
+                     " SELECT [Transaction ID] FROM sys.fn_dblog(NULL, NULL) WHERE AllocUnitName ='dbo.TEST' ;";
+                var con = new SqlConnection(_connectionString);
+                var cmd3 = new SqlCommand(query, con);
+                con.Open();
+                var reader3 = cmd3.ExecuteReader();
+              
+                while(reader3.Read())
+                {
+                toCompare.Add(reader3[0].ToString());   
+                }
+            }
+
+
+            var sql = "";
+            if(dbc.alltables)
+                sql = "USE " + dbc.database + " SELECT [Operation], [Transaction ID],  SUSER_SNAME ([Transaction SID]) AS [USER], [Begin Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_BEGIN_XACT' ";
+           else
+                sql = "USE " + dbc.database + " SELECT [Operation], [Transaction ID],  SUSER_SNAME ([Transaction SID]) AS [USER], [Begin Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_BEGIN_XACT' AND [Transaction ID] =" + "'" + toCompare[0] + "'";
+            
+            CargarPrimeraParte(sql);
+            if(!dbc.alltables)
+            for(int i =1; i<toCompare.Count;i++)
+                CargarPrimeraParte("USE " + dbc.database + " SELECT [Operation], [Transaction ID],  SUSER_SNAME ([Transaction SID]) AS [USER], [Begin Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_BEGIN_XACT' AND [Transaction ID] =" + "'" + toCompare[i] + "'");
+          
+            var sql1 = "";
+            if (!dbc.alltables)
+                sql1 = "USE " + dbc.database +
+                       " SELECT [End Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_COMMIT_XACT' AND [Transaction ID] =" +
+                       "'" + toCompare[0] + "'";
+
+            else
+                sql1 = "USE " + dbc.database +
+                       " SELECT [End Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_COMMIT_XACT'";
+
+            CargarParteDos(sql1);
+
+            if (!dbc.alltables)
+                for (int i = 1; i < toCompare.Count; i++)
+                CargarParteDos("USE " + dbc.database + " SELECT [Operation], [Transaction ID],  SUSER_SNAME ([Transaction SID]) AS [USER], [Begin Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_BEGIN_XACT' AND [Transaction ID] =" + "'" + toCompare[i] + "'");
+
+            var sql2 = "";
+            if (!dbc.alltables)
+            {
+                sql2 = "USE " + dbc.database +
+                       " SELECT [Operation] FROM sys.fn_dblog(NULL, NULL) WHERE AllocUnitName ='dbo." + table + "'";
+                CargarParteTres(sql2);
+            }
+            else
+            {
+                for(int j = 0; j < listView3.Items.Count; j++) { 
+                sql2 = "USE " + dbc.database +
+                       " SELECT [Operation],[AllocUnitName] FROM sys.fn_dblog(NULL, NULL) WHERE AllocUnitName != '' and [Transaction ID] ='"+listView3.Items[j].SubItems[1].Text+"'";
+
+                    var conn2 = new SqlConnection(_connectionString);
+                    var cmd2 = new SqlCommand(sql2, conn2);
+                    conn2.Open();
+                    var reader2 = cmd2.ExecuteReader();
+               
+                    while (reader2.Read())
+                    {
+                        listView3.Items[j].SubItems[0].Text = reader2[0].ToString();
+                        listView3.Items[j].SubItems[2].Text = reader2[1].ToString().Replace("dbo.","");
+                    }
+                }
+            }
         }
 
         public void FirstTab(string thistb)
@@ -175,14 +260,14 @@ namespace LogMiner21341140
             listView1.Columns.Add("Value");
             AddMetaData(thistb);
         }
-        public void AddValues(List<MetaData> metadata)
+        public void AddValues(List<MetaData> metadata,string tab)
         {
             string redo = "";
             string undo = "";
            List<string>ids = new List<string>();
             List<string> fechas = new List<string>();
              string _connectionString = "Server=CARLOSV;Database= "+dbc.database+";Trusted_Connection=True;MultipleActiveResultSets=True;";
-            var rowlog = new MetaDataParser().GetRowLogContents(dbc.database, dbc.table,tipo);
+            var rowlog = new MetaDataParser().GetRowLogContents(dbc.database,tab,tipo);
 
             var converter = new RowLogConversions();
 
@@ -335,11 +420,7 @@ namespace LogMiner21341140
         }
 
 
-        public void UNDO()
-        {
-            
-        }
-        
+       
 
         private void Form1_Load(object sender, EventArgs e)
         {

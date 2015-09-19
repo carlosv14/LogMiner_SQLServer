@@ -397,7 +397,7 @@ namespace LogMiner21341140
             // 
             this.richTextBox2.Location = new System.Drawing.Point(3, 3);
             this.richTextBox2.Name = "richTextBox2";
-            this.richTextBox2.Size = new System.Drawing.Size(719, 149);
+            this.richTextBox2.Size = new System.Drawing.Size(725, 149);
             this.richTextBox2.TabIndex = 0;
             this.richTextBox2.UseTabs = false;
             // 

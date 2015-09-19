@@ -15,14 +15,14 @@ namespace LogMiner21341140
     {
         public string database;
         public string table;
-        private bool alltables;
+        public bool alltables;
         public DatabaseConnection()
         {
             InitializeComponent();
             this.database = "";
             this.table = "";
             alltables = false;
-       AddDatabases();
+            AddDatabases();
 
         }
 
@@ -78,7 +78,8 @@ namespace LogMiner21341140
         {
             this.database = comboBox1.SelectedItem.ToString();
             this.table = comboBox2.SelectedItem.ToString();
-
+            if (checkBox1.Checked)
+                this.alltables = true;
             this.Close();
            
         }

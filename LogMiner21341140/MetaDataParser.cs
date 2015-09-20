@@ -37,10 +37,18 @@ namespace LogMiner
             return result;
         }
 
-        public List<string> GetRowLogContents(string database, string table, string tipo)
+        public List<string> GetRowLogContentsCero(string database, string table, string tipo,string transid)
         {
             var result = new List<string>(); ;
-            var sql = "USE " + database + " SELECT [RowLog Contents 0] FROM fn_dblog(null, null) WHERE Operation = '" + tipo+"'"+ " AND AllocUnitName = 'dbo." + table + "'";
+            var sql = "";
+            if (tipo == "LOP_MODIFY_ROW")
+                sql = "USE " + database + " SELECT [RowLog Contents 0] FROM fn_dblog(null, null) WHERE Operation = '" +
+                      tipo + "'" + " and Context = 'LCX_HEAP' AND AllocUnitName = 'dbo." + table + "' AND [Transaction ID] = " + "'" + transid +
+                      "'";
+            else
+                sql = "USE " + database + " SELECT [RowLog Contents 0] FROM fn_dblog(null, null) WHERE Operation = '" +
+                      tipo + "'" + " and Context = 'LCX_HEAP' AND AllocUnitName = 'dbo." + table + "'";
+
             var conn = new SqlConnection(_connectionString);
             var cmd = new SqlCommand(sql, conn);
             conn.Open();
@@ -61,7 +69,38 @@ namespace LogMiner
             conn.Close();
             return result;
         }
+        public List<string> GetRowLogContentsOne(string database, string table, string tipo, string transid)
+        {
+            var result = new List<string>(); ;
+            var sql = "";
+            if (tipo == "LOP_MODIFY_ROW")
+                sql = "USE " + database + " SELECT [RowLog Contents 1] FROM fn_dblog(null, null) WHERE Operation = '" +
+                      tipo + "'" + " and Context = 'LCX_HEAP' AND AllocUnitName = 'dbo." + table + "' AND [Transaction ID] = " + "'" + transid +
+                      "'";
+            else
+                sql = "USE " + database + " SELECT [RowLog Contents 1] FROM fn_dblog(null, null) WHERE Operation = '" +
+                      tipo + "'" + " and Context = 'LCX_HEAP' AND AllocUnitName = 'dbo." + table + "'";
 
+            var conn = new SqlConnection(_connectionString);
+            var cmd = new SqlCommand(sql, conn);
+            conn.Open();
+            var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                var bytes = reader[0] as byte[];
+
+                if (bytes == null)
+                    continue;
+                var hex = BitConverter.ToString(bytes).Replace("-", string.Empty);
+                if (!String.IsNullOrEmpty(hex))
+                {
+                    result.Add(hex);
+                }
+            }
+            reader.Close();
+            conn.Close();
+            return result;
+        }
         public string GetPrimaryKey(string database, string table)
         {
             var query = "USE " + database + " SELECT column_name FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE OBJECTPROPERTY(OBJECT_ID(constraint_name), 'IsPrimaryKey') = 1 AND table_name = '" + table + "'";

@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Permissions;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -28,11 +29,12 @@ namespace LogMiner21341140
             tipo = "LOP_DELETE_ROWS";
             this.database = "";
             this.table = "";
-         dbc = new DatabaseConnection();
+            dbc = new DatabaseConnection();
             dbc.ShowDialog();
             database = dbc.database;
             table = dbc.table;
             FillList();
+            deleteOps();
             richTextBox1.StyleResetDefault();
             richTextBox1.Styles[Style.Default].Font = "Consolas";
             richTextBox1.Styles[Style.Default].Size = 10;
@@ -81,7 +83,7 @@ namespace LogMiner21341140
         }
 
 
-        public void AddMetaData(string table)
+        public void AddMetaData(string table, string transid)
         {
            
             var metadata = new MetaDataParser().GetMetadata(database, table);
@@ -105,12 +107,26 @@ namespace LogMiner21341140
                 values.Add(metadata[i].ColumnName);
                 values.Add(metadata[i].Type.ToString());
                 values.Add("");
+                if(tipo=="LOP_MODIFY_ROW")
+                    values.Add("");
                 ListViewItem lvi = new ListViewItem(values.ToArray());
                 listView1.Items.Add(lvi);
                 values.Clear();
             }
            
-            AddValues(metadata,table);
+            AddValues(metadata,table,transid);
+        }
+
+        public void deleteOps()
+        {
+            for (int i = 0; i < listView3.Items.Count; i++)
+            {
+               
+                   if(listView3.Items[i].SubItems[0].Text!="LOP_DELETE_ROWS" && listView3.Items[i].SubItems[0].Text != "LOP_INSERT_ROWS" && listView3.Items[i].SubItems[0].Text != "LOP_MODIFY_ROW")
+                    listView3.Items.RemoveAt(i);
+
+              
+            }
         }
 
         public void CargarPrimeraParte(string sql)
@@ -170,6 +186,7 @@ namespace LogMiner21341140
         public void FillList()
         {
             listView3.Columns.Clear();
+            listView3.Items.Clear();
             List<string>info   = new List<string>();
             listView3.Columns.Add("OPERATION");
             listView3.Columns.Add("TRANSACTION ID");
@@ -184,7 +201,7 @@ namespace LogMiner21341140
             {
                 toCompare = new List<string>();
                 var query = "USE " + dbc.database +
-                     " SELECT [Transaction ID] FROM sys.fn_dblog(NULL, NULL) WHERE AllocUnitName ='dbo.TEST' ;";
+                     " SELECT [Transaction ID] FROM sys.fn_dblog(NULL, NULL) WHERE Context = 'LCX_HEAP' AND AllocUnitName ='dbo." + table+"';";
                 var con = new SqlConnection(_connectionString);
                 var cmd3 = new SqlCommand(query, con);
                 con.Open();
@@ -199,43 +216,41 @@ namespace LogMiner21341140
 
             var sql = "";
             if(dbc.alltables)
-                sql = "USE " + dbc.database + " SELECT [Operation], [Transaction ID],  SUSER_SNAME ([Transaction SID]) AS [USER], [Begin Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_BEGIN_XACT' ";
-           else
+                sql = "USE " + dbc.database + " SELECT [Operation], [Transaction ID],  SUSER_SNAME ([Transaction SID]) AS [USER], [Begin Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_BEGIN_XACT' AND Context = 'LCX_HEAP' ";
+           else if(!dbc.alltables && toCompare.Count>0)
                 sql = "USE " + dbc.database + " SELECT [Operation], [Transaction ID],  SUSER_SNAME ([Transaction SID]) AS [USER], [Begin Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_BEGIN_XACT' AND [Transaction ID] =" + "'" + toCompare[0] + "'";
-            
+            if(sql!="")
             CargarPrimeraParte(sql);
             if(!dbc.alltables)
             for(int i =1; i<toCompare.Count;i++)
                 CargarPrimeraParte("USE " + dbc.database + " SELECT [Operation], [Transaction ID],  SUSER_SNAME ([Transaction SID]) AS [USER], [Begin Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_BEGIN_XACT' AND [Transaction ID] =" + "'" + toCompare[i] + "'");
           
             var sql1 = "";
-            if (!dbc.alltables)
-                sql1 = "USE " + dbc.database +
-                       " SELECT [End Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_COMMIT_XACT' AND [Transaction ID] =" +
+             if (!dbc.alltables && toCompare.Count > 0)
+                    sql1 = "USE " + dbc.database +
+                       " SELECT [End Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_COMMIT_XACT'AND Context = 'LCX_HEAP' AND [Transaction ID] =" +
                        "'" + toCompare[0] + "'";
 
             else
                 sql1 = "USE " + dbc.database +
-                       " SELECT [End Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_COMMIT_XACT'";
+                       " SELECT [End Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_COMMIT_XACT' AND Context = 'LCX_HEAP'";
+            if (sql1 != "")
+                CargarParteDos(sql1);
 
-            CargarParteDos(sql1);
-
-            if (!dbc.alltables)
-                for (int i = 1; i < toCompare.Count; i++)
-                CargarParteDos("USE " + dbc.database + " SELECT [Operation], [Transaction ID],  SUSER_SNAME ([Transaction SID]) AS [USER], [Begin Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_BEGIN_XACT' AND [Transaction ID] =" + "'" + toCompare[i] + "'");
+           
 
             var sql2 = "";
             if (!dbc.alltables)
             {
                 sql2 = "USE " + dbc.database +
-                       " SELECT [Operation] FROM sys.fn_dblog(NULL, NULL) WHERE AllocUnitName ='dbo." + table + "'";
+                       " SELECT [Operation] FROM sys.fn_dblog(NULL, NULL) WHERE Context = 'LCX_HEAP' AND AllocUnitName ='dbo." + table + "'";
                 CargarParteTres(sql2);
             }
             else
             {
                 for(int j = 0; j < listView3.Items.Count; j++) { 
                 sql2 = "USE " + dbc.database +
-                       " SELECT [Operation],[AllocUnitName] FROM sys.fn_dblog(NULL, NULL) WHERE AllocUnitName != '' and [Transaction ID] ='"+listView3.Items[j].SubItems[1].Text+"'";
+                       " SELECT [Operation],[AllocUnitName] FROM sys.fn_dblog(NULL, NULL) WHERE Context = 'LCX_HEAP' AND AllocUnitName != '' and [Transaction ID] ='" + listView3.Items[j].SubItems[1].Text+"'";
 
                     var conn2 = new SqlConnection(_connectionString);
                     var cmd2 = new SqlCommand(sql2, conn2);
@@ -251,24 +266,114 @@ namespace LogMiner21341140
             }
         }
 
-        public void FirstTab(string thistb)
+        public void FirstTab(string thistb,string transid)
         {
             listView1.Columns.Clear();
             listView1.Items.Clear();
             listView1.Columns.Add("FIELD");
-            listView1.Columns.Add("Type");
-            listView1.Columns.Add("Value");
-            AddMetaData(thistb);
+            listView1.Columns.Add("TYPE");
+            if (tipo == "LOP_MODIFY_ROW")
+            {
+                listView1.Columns.Add("BEFORE VALUE");
+                listView1.Columns.Add("AFTER VALUE");
+            }
+            else
+            {
+                listView1.Columns.Add("VALUE");
+            }
+            AddMetaData(thistb,transid);
         }
-        public void AddValues(List<MetaData> metadata,string tab)
+
+
+        public void AddAfter(List<MetaData> metadata, string tab, string transid)
+        {
+            string _connectionString = "Server=CARLOSV;Database= " + dbc.database + ";Trusted_Connection=True;MultipleActiveResultSets=True;";
+            int cantidad = 0;
+
+            var rowlog = new MetaDataParser().GetRowLogContentsOne(dbc.database, tab, tipo, transid);
+
+
+
+            var converter = new RowLogConversions();
+
+            List<string> valores;
+
+            for (int i = 0; i < rowlog.Count; i++)
+            {
+                valores = new List<string>();
+
+                if (tipo == "LOP_MODIFY_ROW")
+                {
+                    var rowlog1 = new MetaDataParser().GetRowLogContentsCero(dbc.database, tab, "LOP_INSERT_ROWS", "");
+                    cantidad = RowLogConversions.CantidadLongitudFija(rowlog1[0], metadata);
+                }
+
+
+                var values = converter.ParseRowLogContents(rowlog[i], metadata, tipo, cantidad);
+
+                if (values.Count > 0)
+                {
+                    for (int j = 0; j < values.Count; j++)
+                        valores.Add(values[j]);
+
+
+                    for (int j = 0; j < values.Count; j++)
+                    {
+                        listView1.Items[j].SubItems[3].Text = values.ElementAt(j);
+                    }
+                    string undo = "";
+                    if (tipo == "LOP_MODIFY_ROW")
+                    {
+
+                        undo = "";
+
+
+
+                        undo += "UPDATE " + dbc.database + " SET ";
+                        for (int k = 0; k < values.Count; k++)
+                        {
+                            if (metadata[k].Type == ColumnType.Char || metadata[k].Type == ColumnType.VarChar)
+                            {
+
+                                undo += metadata.ElementAt(k).ColumnName + " = '" + values.ElementAt(k) + "'";
+                            }
+                            else
+                            {
+
+                                undo += metadata.ElementAt(k).ColumnName + " = " + values.ElementAt(k);
+                            }
+                            if (k < values.Count - 1)
+                            {
+
+                                undo += " AND ";
+                            }
+                            if (k == values.Count - 1)
+                            {
+
+                                undo += ";";
+                            }
+                        }
+
+                        richTextBox2.Text = undo;
+
+                    }
+                }
+            }
+
+
+        }
+        public void AddValues(List<MetaData> metadata,string tab,string transid)
         {
             string redo = "";
+            var cantidad = 0;
             string undo = "";
-           List<string>ids = new List<string>();
-            List<string> fechas = new List<string>();
              string _connectionString = "Server=CARLOSV;Database= "+dbc.database+";Trusted_Connection=True;MultipleActiveResultSets=True;";
-            var rowlog = new MetaDataParser().GetRowLogContents(dbc.database,tab,tipo);
 
+
+            var rowlog = new MetaDataParser().GetRowLogContentsCero(dbc.database, tab, tipo, transid);
+         
+
+           
             var converter = new RowLogConversions();
 
             List<string> valores;
@@ -276,18 +381,26 @@ namespace LogMiner21341140
             for (int i = 0; i < rowlog.Count; i++)
             {
                 valores = new List<string>();
-               
-              
-                var values = converter.ParseRowLogContents(rowlog[i], metadata);
+
+                if (tipo == "LOP_MODIFY_ROW")
+                {
+                    var rowlog1 = new MetaDataParser().GetRowLogContentsCero(dbc.database, tab, "LOP_INSERT_ROWS","");
+                    cantidad = RowLogConversions.CantidadLongitudFija(rowlog1[0], metadata);
+                }
+
+
+                var values = converter.ParseRowLogContents(rowlog[i], metadata,tipo,cantidad);
+                
                 if (values.Count > 0)
                 {
                     for (int j = 0; j < values.Count; j++)
                         valores.Add(values[j]);
 
 
-                    for (int j = 0; j < listView1.Items.Count; j++)
+                    for (int j = 0; j < values.Count; j++)
                     {
                         listView1.Items[j].SubItems[2].Text = values.ElementAt(j);
+                       
                     }
 
                     if (tipo == "LOP_DELETE_ROWS")
@@ -362,60 +475,48 @@ namespace LogMiner21341140
                         richTextBox1.Text = undo;
                         richTextBox2.Text = redo;
                     }
+                    else if (tipo == "LOP_MODIFY_ROW")
+                    {
+                      
+                        undo = "";
+
+
+                      
+                        undo += "UPDATE " + dbc.database + " SET ";
+                        for (int k = 0; k < values.Count; k++)
+                        {
+                            if (metadata[k].Type == ColumnType.Char || metadata[k].Type == ColumnType.VarChar)
+                            {
+                
+                                undo += metadata.ElementAt(k).ColumnName + " = '" + values.ElementAt(k) + "'";
+                            }
+                            else
+                            {
+                                
+                                undo += metadata.ElementAt(k).ColumnName + " = " + values.ElementAt(k);
+                            }
+                            if (k < values.Count - 1)
+                            {
+                             
+                                undo += " AND ";
+                            }
+                            if (k == values.Count - 1)
+                            {
+                              
+                                undo += ";";
+                            }
+                        }
+
+                        richTextBox1.Text = undo;
+             
+                    }
                 }
             }
 
-          
-            //var sql = "USE " + dbc.database + " SELECT [Transaction ID] FROM fn_dblog(null, null) WHERE Operation = '"+tipo+"'"+"AND AllocUnitName = 'dbo." + dbc.table + "'";
-            //var conn = new SqlConnection(_connectionString);
-            //var cmd = new SqlCommand(sql, conn);
-            //conn.Open();
-            //var query = "";
-            //SqlCommand  cmd1 = null;
-            //var reader = cmd.ExecuteReader();
-         
-            
-            
-            //while (reader.Read())
-            //{
-            //    ids.Add(reader[0].ToString());
-             
-            //}
-
-            //for (int h = 0; h < ids.Count; h++)
-            //{
-            //    query = "USE " + dbc.database + " SELECT TOP 1[Begin Time] FROM fn_dblog (NULL, NULL) where[Transaction ID] = '" + ids.ElementAt(h) + "'";
-            //    cmd1 = new SqlCommand(query, conn);
-            //    var reader1 = cmd1.ExecuteReader();
-               
-            //    while (reader1.Read())
-            //    {
-            //        fechas.Add(reader1[0].ToString());
-
-            //    }
-
-              
-               
-                
-            //}
-            //reader.Close();
-            //conn.Close();
-            //if (tipo == "LOP_DELETE_ROWS")
-            //{
-            //    for (int i = 0; i < listView1.Items.Count; i++)
-            //    {
-            //        listView1.Items[i].SubItems[0].Text = ids.ElementAt(i);
-            //        listView1.Items[i].SubItems[1].Text = fechas.ElementAt(i);
-            //    }
-            //}
-            //else if (tipo == "LOP_INSERT_ROWS")
-            //{
-            //    for (int i = 0; i < listView2.Items.Count; i++)
-            //    {
-            //        listView2.Items[i].SubItems[0].Text = ids.ElementAt(i);
-            //        listView2.Items[i].SubItems[1].Text = fechas.ElementAt(i);
-            //    }
-            //}
+            if (tipo == "LOP_MODIFY_ROW")
+            {
+               AddAfter(metadata,tab,transid);
+            }
 
         }
 
@@ -429,14 +530,7 @@ namespace LogMiner21341140
 
         private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (tabControl1.SelectedIndex == 0)
-            {
-                tipo = "LOP_DELETE_ROWS";
-            }
-            else if (tabControl1.SelectedIndex == 1)
-            {
-                tipo = "LOP_INSERT_ROWS";
-            }
+          
         }
 
         private void ribbonControl1_Click(object sender, EventArgs e)
@@ -449,11 +543,19 @@ namespace LogMiner21341140
             DatabaseConnection dtbc = new DatabaseConnection();
             dtbc.ShowDialog();
             dbc = dtbc;
+            table = dbc.table;
+            database = dbc.database;
+            FillList();
+            deleteOps();
         }
 
         private void buttonItem15_Click(object sender, EventArgs e)
         {
             dbc.ShowDialog();
+            database = dbc.database;
+            table = dbc.table;
+            FillList();
+            deleteOps();
         }
 
         private void listView3_SelectedIndexChanged(object sender, EventArgs e)
@@ -469,8 +571,7 @@ namespace LogMiner21341140
         private void listView3_DoubleClick(object sender, EventArgs e)
         {
             tipo = listView3.SelectedItems[0].SubItems[0].Text;
-            FirstTab(listView3.SelectedItems[0].SubItems[2].Text);
-           
+            FirstTab(listView3.SelectedItems[0].SubItems[2].Text, listView3.SelectedItems[0].SubItems[1].Text);
         }
     }
 }

@@ -50,8 +50,8 @@ namespace LogMiner21341140
             this.listView3 = new System.Windows.Forms.ListView();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
-            this.tabPage2 = new System.Windows.Forms.TabPage();
             this.listView1 = new System.Windows.Forms.ListView();
+            this.tabPage2 = new System.Windows.Forms.TabPage();
             this.richTextBox1 = new ScintillaNET.Scintilla();
             this.tabPage3 = new System.Windows.Forms.TabPage();
             this.richTextBox2 = new ScintillaNET.Scintilla();
@@ -354,6 +354,15 @@ namespace LogMiner21341140
             this.tabPage1.Text = "Operation Details";
             this.tabPage1.UseVisualStyleBackColor = true;
             // 
+            // listView1
+            // 
+            this.listView1.Location = new System.Drawing.Point(3, 6);
+            this.listView1.Name = "listView1";
+            this.listView1.Size = new System.Drawing.Size(722, 146);
+            this.listView1.TabIndex = 10;
+            this.listView1.UseCompatibleStateImageBehavior = false;
+            this.listView1.View = System.Windows.Forms.View.Details;
+            // 
             // tabPage2
             // 
             this.tabPage2.Controls.Add(this.richTextBox1);
@@ -365,20 +374,11 @@ namespace LogMiner21341140
             this.tabPage2.Text = "Undo Script";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
-            // listView1
-            // 
-            this.listView1.Location = new System.Drawing.Point(3, 6);
-            this.listView1.Name = "listView1";
-            this.listView1.Size = new System.Drawing.Size(710, 146);
-            this.listView1.TabIndex = 10;
-            this.listView1.UseCompatibleStateImageBehavior = false;
-            this.listView1.View = System.Windows.Forms.View.Details;
-            // 
             // richTextBox1
             // 
             this.richTextBox1.Location = new System.Drawing.Point(0, 6);
             this.richTextBox1.Name = "richTextBox1";
-            this.richTextBox1.Size = new System.Drawing.Size(722, 149);
+            this.richTextBox1.Size = new System.Drawing.Size(728, 149);
             this.richTextBox1.TabIndex = 0;
             this.richTextBox1.UseTabs = false;
             // 

@@ -88,5 +88,10 @@ namespace LogMiner21341140
         {
             AddTableNames(comboBox1.SelectedItem.ToString());
         }
+
+        private void ribbonControl1_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

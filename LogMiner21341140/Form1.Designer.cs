@@ -41,9 +41,7 @@ namespace LogMiner21341140
             this.ribbonBar1 = new DevComponents.DotNetBar.RibbonBar();
             this.buttonItem14 = new DevComponents.DotNetBar.ButtonItem();
             this.buttonItem15 = new DevComponents.DotNetBar.ButtonItem();
-            this.ribbonPanel2 = new DevComponents.DotNetBar.RibbonPanel();
             this.ribbonTabItem1 = new DevComponents.DotNetBar.RibbonTabItem();
-            this.ribbonTabItem2 = new DevComponents.DotNetBar.RibbonTabItem();
             this.buttonItem1 = new DevComponents.DotNetBar.ButtonItem();
             this.qatCustomizeItem1 = new DevComponents.DotNetBar.QatCustomizeItem();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
@@ -80,11 +78,9 @@ namespace LogMiner21341140
             this.ribbonControl1.BackgroundStyle.CornerType = DevComponents.DotNetBar.eCornerType.Square;
             this.ribbonControl1.CaptionVisible = true;
             this.ribbonControl1.Controls.Add(this.ribbonPanel1);
-            this.ribbonControl1.Controls.Add(this.ribbonPanel2);
             this.ribbonControl1.Dock = System.Windows.Forms.DockStyle.Top;
             this.ribbonControl1.Items.AddRange(new DevComponents.DotNetBar.BaseItem[] {
-            this.ribbonTabItem1,
-            this.ribbonTabItem2});
+            this.ribbonTabItem1});
             this.ribbonControl1.KeyTipsFont = new System.Drawing.Font("Tahoma", 7F);
             this.ribbonControl1.Location = new System.Drawing.Point(0, 0);
             this.ribbonControl1.Name = "ribbonControl1";
@@ -256,44 +252,12 @@ namespace LogMiner21341140
             this.buttonItem15.Tooltip = "Session Settings";
             this.buttonItem15.Click += new System.EventHandler(this.buttonItem15_Click);
             // 
-            // ribbonPanel2
-            // 
-            this.ribbonPanel2.ColorSchemeStyle = DevComponents.DotNetBar.eDotNetBarStyle.StyleManagerControlled;
-            this.ribbonPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ribbonPanel2.Location = new System.Drawing.Point(0, 53);
-            this.ribbonPanel2.Name = "ribbonPanel2";
-            this.ribbonPanel2.Padding = new System.Windows.Forms.Padding(3, 0, 3, 3);
-            this.ribbonPanel2.Size = new System.Drawing.Size(754, 86);
-            // 
-            // 
-            // 
-            this.ribbonPanel2.Style.Class = "";
-            this.ribbonPanel2.Style.CornerType = DevComponents.DotNetBar.eCornerType.Square;
-            // 
-            // 
-            // 
-            this.ribbonPanel2.StyleMouseDown.Class = "";
-            this.ribbonPanel2.StyleMouseDown.CornerType = DevComponents.DotNetBar.eCornerType.Square;
-            // 
-            // 
-            // 
-            this.ribbonPanel2.StyleMouseOver.Class = "";
-            this.ribbonPanel2.StyleMouseOver.CornerType = DevComponents.DotNetBar.eCornerType.Square;
-            this.ribbonPanel2.TabIndex = 2;
-            this.ribbonPanel2.Visible = false;
-            // 
             // ribbonTabItem1
             // 
             this.ribbonTabItem1.Checked = true;
             this.ribbonTabItem1.Name = "ribbonTabItem1";
             this.ribbonTabItem1.Panel = this.ribbonPanel1;
-            this.ribbonTabItem1.Text = "ribbonTabItem1";
-            // 
-            // ribbonTabItem2
-            // 
-            this.ribbonTabItem2.Name = "ribbonTabItem2";
-            this.ribbonTabItem2.Panel = this.ribbonPanel2;
-            this.ribbonTabItem2.Text = "ribbonTabItem2";
+            this.ribbonTabItem1.Text = "Home";
             // 
             // buttonItem1
             // 
@@ -323,12 +287,13 @@ namespace LogMiner21341140
             // 
             // listView3
             // 
-            this.listView3.Location = new System.Drawing.Point(235, 3);
+            this.listView3.Location = new System.Drawing.Point(3, 3);
             this.listView3.Name = "listView3";
-            this.listView3.Size = new System.Drawing.Size(501, 187);
+            this.listView3.Size = new System.Drawing.Size(733, 187);
             this.listView3.TabIndex = 9;
             this.listView3.UseCompatibleStateImageBehavior = false;
             this.listView3.View = System.Windows.Forms.View.Details;
+            this.listView3.SelectedIndexChanged += new System.EventHandler(this.listView3_SelectedIndexChanged_1);
             this.listView3.DoubleClick += new System.EventHandler(this.listView3_DoubleClick);
             // 
             // tabControl1
@@ -434,9 +399,7 @@ namespace LogMiner21341140
         private RibbonControl ribbonControl1;
         private RibbonPanel ribbonPanel1;
         private RibbonBar ribbonBar1;
-        private RibbonPanel ribbonPanel2;
         private RibbonTabItem ribbonTabItem1;
-        private RibbonTabItem ribbonTabItem2;
         private ButtonItem buttonItem1;
         private QatCustomizeItem qatCustomizeItem1;
         private RibbonBar ribbonBar2;

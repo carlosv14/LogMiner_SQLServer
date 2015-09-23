@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace LogMiner
 {
@@ -27,8 +28,8 @@ namespace LogMiner
                     return "" + ToFloat(value);
                 case ColumnType.Real:
                     return "" + ConvertToReal(value);
-                //case ColumnType.Numeric:
-                //    return "" + nu(value);
+                case ColumnType.Numeric:
+                  return "" + ToDecimal(value);
                 case ColumnType.Bit:
                     return "" + ConvertToBit(value);
                 case ColumnType.Binary:
@@ -38,21 +39,26 @@ namespace LogMiner
                 case ColumnType.VarChar:
                     return ToVarchar(value);
                 case ColumnType.DateTime:
-                    return ToDateTime(value).ToString(CultureInfo.InvariantCulture);
+                    return ToDateTime(value);
                 case ColumnType.SmallDateTime:
-                    return (value).ToString(CultureInfo.InvariantCulture);
+                    return ToSmallDateTime(value);
                 default:
                     return null;
             }
         }
 
-        public DateTime ParseSmallDateTime(string input)
+        public static string ToSmallDateTime(string hexadecimal)
         {
-            UInt32 secondsAfterEpoch = (uint)ToInt(input);
-            DateTime epoch = new DateTime(1900, 1, 1);
-            DateTime myDateTime = epoch.AddMinutes(secondsAfterEpoch);
-            return myDateTime;
-          
+            Hexadecimals h = new Hexadecimals();
+
+            var fechabase = "1900-01-01 00:00";
+            var date = DateTime.ParseExact(fechabase, "yyyy-MM-dd HH:mm", null);
+            date = date.AddDays(BitConverter.ToUInt16(h.FromHex(hexadecimal), 2));
+            date = date.AddSeconds(BitConverter.ToUInt16(h.FromHex(hexadecimal), 0) / 300);
+            return date.ToString();
+
+
+
         }
         private  static readonly Dictionary<char, string> hexToBin = new Dictionary<char, string> {
             { '0', "0000" },
@@ -73,7 +79,7 @@ namespace LogMiner
             { 'f', "1111" }
         };
 
-       
+     
         public static int ToInt(string hexadecimal)
         {
             int x;
@@ -82,16 +88,16 @@ namespace LogMiner
             x = int.Parse(hex,NumberStyles.HexNumber);
             return x;
         }
-        public static byte ToTinyInt(string input)
+        public static byte ToTinyInt(string hex)
         {
-            return Byte.Parse(input, NumberStyles.HexNumber);
+            return Byte.Parse(hex, NumberStyles.HexNumber);
         }
-        public static string ToChar(string input)
+        public static string ToChar(string hex)
         {
             var result = "";
-            for (var i = 0; i < input.Length; i = i + 2)
+            for (var i = 0; i < hex.Length; i = i + 2)
             {
-                result += (char)Int16.Parse(input.Substring(i, 2), NumberStyles.AllowHexSpecifier);
+                result += (char)Int16.Parse(hex.Substring(i, 2), NumberStyles.AllowHexSpecifier);
             }
             result = result.Trim();
             return result;
@@ -129,22 +135,23 @@ namespace LogMiner
         }
        
 
-    public static float ToFloat(string hex)
+   
+
+        public static decimal ToDecimal(string input)
         {
-            Hexadecimals h = new Hexadecimals();
-             byte[] bytes = h.FromHex(hex);
-            if (BitConverter.IsLittleEndian)
+           
+            var stringlist = new List<string>();
+            for (int i = 0; i < input.Length; i += 2)
             {
-                bytes = bytes.Reverse().ToArray();
+                stringlist.Add(input.Substring(i, 2));
             }
-            return BitConverter.ToSingle(bytes, 0);
+            stringlist.Reverse();
+            stringlist.RemoveAt(stringlist.Count - 1);
+            string numero = String.Join("", stringlist);
+            
+            return Convert.ToInt64(numero, 16);
         }
 
-        public static double ToDecimal(string hex)
-        {
-
-            return Convert.ToInt32(hex, 16);
-        }
 
         public static bool ConvertToBit(string hex)
         {
@@ -164,17 +171,27 @@ namespace LogMiner
                 stringlist.Add(input.Substring(i, 2));
             }
             stringlist.Reverse();
-            var bigEndian = String.Join("", stringlist);
+            var numero = String.Join("", stringlist);
 
-            return Int16.Parse(bigEndian, NumberStyles.HexNumber); ;
+            return Int16.Parse(numero, NumberStyles.HexNumber); ;
         }
-        public static Int64 ToBigInt(string hexadecimal)
+
+        public static Int64 ToBigInt(string input)
         {
-            Hexadecimals h = new Hexadecimals();
-            return (Convert.ToInt64(hexadecimal, 16));
+            var stringlist = new List<string>();
+            for (int i = 0; i < 16; i += 2)
+            {
+                stringlist.Add(input.Substring(i, 2));
+            }
+            stringlist.Reverse();
+            string numero = String.Join("", stringlist);
+            return Int64.Parse(numero, NumberStyles.HexNumber);
         }
 
-
+        public static double ToFloat(string input)
+        {
+            return BitConverter.Int64BitsToDouble(ToBigInt(input));
+        }
         public static float ConvertToReal(string hex)
         {
             Hexadecimals h = new Hexadecimals();
@@ -186,19 +203,16 @@ namespace LogMiner
             }
             return BitConverter.ToSingle(bytes, 0);
         }
-        public static string ToDateTime(string hex)
+        public static string ToDateTime(string hexadecimal)
         {
             Hexadecimals h = new Hexadecimals();
-            Byte[] bytes = h.FromHex(hex);
-            if (BitConverter.IsLittleEndian)
-            {
-                bytes = bytes.Reverse().ToArray();
-            }
-            return new DateTime(1900, 1, 1).AddDays(BitConverter.ToInt32(bytes, 4)).
-                           AddMilliseconds(10 / 3.0d * BitConverter.ToInt32(bytes, 0)).
-                           ToString(CultureInfo.InvariantCulture);
+           
+            var fechabase= "1900-01-01 00:00";
+            var date = DateTime.ParseExact(fechabase, "yyyy-MM-dd HH:mm", null);
+            date = date.AddDays(BitConverter.ToUInt32(h.FromHex(hexadecimal), 4));
+            date = date.AddSeconds(BitConverter.ToUInt32(h.FromHex(hexadecimal), 0) / 300);
+            return date.ToString("yyyy/MM/dd HH:mm:ss");      
         }
-
 
         public static double ConvertToMoney(string hex)
         {

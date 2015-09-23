@@ -47,7 +47,8 @@ namespace LogMiner
                       "'";
             else
                 sql = "USE " + database + " SELECT [RowLog Contents 0] FROM fn_dblog(null, null) WHERE Operation = '" +
-                      tipo + "'" + " and Context = 'LCX_HEAP' AND AllocUnitName = 'dbo." + table + "'";
+                      tipo + "'" + " and Context = 'LCX_HEAP' AND AllocUnitName = 'dbo." + table + "' AND [Transaction ID] = " + "'" + transid +
+                      "'";
 
             var conn = new SqlConnection(_connectionString);
             var cmd = new SqlCommand(sql, conn);
@@ -65,7 +66,29 @@ namespace LogMiner
                    result.Add(hex);
                 }
             }
+            if (!reader.HasRows)
+            {
+                sql = "USE " + database + " SELECT [RowLog Contents 0] FROM fn_dblog(null, null) WHERE Operation = '" +
+                     tipo + "'" + " and AllocUnitName like'dbo." + table + ".PK%' AND [Transaction ID] = " + "'" + transid +
+                      "'";
+                var cmd1 = new SqlCommand(sql, conn);
+                var reader1 = cmd1.ExecuteReader();
+                while (reader1.Read())
+                {
+                    var bytes = reader1[0] as byte[];
+
+                    if (bytes == null)
+                        continue;
+                    var hex = BitConverter.ToString(bytes).Replace("-", string.Empty);
+                    if (!String.IsNullOrEmpty(hex))
+                    {
+                        result.Add(hex);
+                    }
+                }
+
+            }
             reader.Close();
+           
             conn.Close();
             return result;
         }

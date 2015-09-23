@@ -23,18 +23,25 @@ namespace LogMiner21341140
         private string database;
         private string table;
         private DatabaseConnection dbc;
+        private string complete;
+
+        private string undoupdate = "";
+        private string redoupdate = "";
+        private string anyinsert;
         public Form1()
         {
             InitializeComponent();
             tipo = "LOP_DELETE_ROWS";
             this.database = "";
             this.table = "";
+            anyinsert = "";
             dbc = new DatabaseConnection();
             dbc.ShowDialog();
             database = dbc.database;
             table = dbc.table;
             FillList();
             deleteOps();
+        
             richTextBox1.StyleResetDefault();
             richTextBox1.Styles[Style.Default].Font = "Consolas";
             richTextBox1.Styles[Style.Default].Size = 10;
@@ -78,7 +85,8 @@ namespace LogMiner21341140
         
             richTextBox2.SetKeywords(0, "abort absolute access action add admin after aggregate all also alter always analyse analyze and any array as asc assertion assignment asymmetric at attribute authorization backward before begin between bigint binary bit boolean both by cache called cascade cascaded case cast catalog chain char character characteristics check checkpoint class close cluster coalesce collate collation column comment comments commit committed concurrently configuration connection constraint constraints content continue conversion copy cost create cross csv current current_catalog current_date current_role current_schema current_time current_timestamp current_user cursor cycle data database day deallocate dec decimal declare default defaults deferrable deferred definer delete delimiter delimiters desc dictionary disable discard distinct do document domain double drop each else enable encoding encrypted end enum escape event except exclude excluding exclusive execute exists explain extension external extract false family fetch filter first float following for force foreign forward freeze from full function functions global grant granted greatest group handler having header hold hour identity if ilike immediate immutable implicit in including increment index indexes inherit inherits initially inline inner inout input insensitive insert instead int integer intersect interval into invoker is isnull isolation join key label language large last lateral lc_collate lc_ctype leading leakproof least left level like limit listen load local localtime localtimestamp location lock mapping match materialized maxvalue minute minvalue mode month move name names national natural nchar next no none not nothing notify notnull nowait null nullif nulls numeric object of off offset oids on only operator option options or order ordinality out outer over overlaps overlay owned owner parser partial partition passing password placing plans position preceding precision prepare prepared preserve primary prior privileges procedural procedure program quote range read real reassign recheck recursive ref references refresh reindex relative release rename repeatable replace replica reset restart restrict returning returns revoke right role rollback row rows rule savepoint schema scroll search second security select sequence sequences serializable server session session_user set setof share show similar simple smallint snapshot some stable standalone start statement statistics stdin stdout storage strict strip substring symmetric sysid system table tables tablespace temp template temporary text then time timestamp to trailing transaction treat trigger trim true truncate trusted type types unbounded uncommitted unencrypted union unique unknown unlisten unlogged until user using vacuum valid validate validator value values varchar variadic varying verbose version view views volatile when where whitespace window with within without work wrapper write xml xmlattributes xmlconcat xmlelement xmlexists xmlforest xmlparse xmlpi xmlroot xmlserialize year yes zone ABORT ABSOLUTE ACCESS ACTION ADD ADMIN AFTER AGGREGATE ALL ALSO ALTER ALWAYS ANALYSE ANALYZE AND ANY ARRAY AS ASC ASSERTION ASSIGNMENT ASYMMETRIC AT ATTRIBUTE AUTHORIZATION BACKWARD BEFORE BEGIN BETWEEN BIGINT BINARY BIT BOOLEAN BOTH BY CACHE CALLED CASCADE CASCADED CASE CAST CATALOG CHAIN CHAR CHARACTER CHARACTERISTICS CHECK CHECKPOINT CLASS CLOSE CLUSTER COALESCE COLLATE COLLATION COLUMN COMMENT COMMENTS COMMIT COMMITTED CONCURRENTLY CONFIGURATION CONNECTION CONSTRAINT CONSTRAINTS CONTENT CONTINUE CONVERSION COPY COST CREATE CROSS CSV CURRENT CURRENT_CATALOG CURRENT_DATE CURRENT_ROLE CURRENT_SCHEMA CURRENT_TIME CURRENT_TIMESTAMP CURRENT_USER CURSOR CYCLE DATA DATABASE DAY DEALLOCATE DEC DECIMAL DECLARE DEFAULT DEFAULTS DEFERRABLE DEFERRED DEFINER DELETE DELIMITER DELIMITERS DESC DICTIONARY DISABLE DISCARD DISTINCT DO DOCUMENT DOMAIN DOUBLE DROP EACH ELSE ENABLE ENCODING ENCRYPTED END ENUM ESCAPE EVENT EXCEPT EXCLUDE EXCLUDING EXCLUSIVE EXECUTE EXISTS EXPLAIN EXTENSION EXTERNAL EXTRACT FALSE FAMILY FETCH FILTER FIRST FLOAT FOLLOWING FOR FORCE FOREIGN FORWARD FREEZE FROM FULL FUNCTION FUNCTIONS GLOBAL GRANT GRANTED GREATEST GROUP HANDLER HAVING HEADER HOLD HOUR IDENTITY IF ILIKE IMMEDIATE IMMUTABLE IMPLICIT IN INCLUDING INCREMENT INDEX INDEXES INHERIT INHERITS INITIALLY INLINE INNER INOUT INPUT INSENSITIVE INSERT INSTEAD INT INTEGER INTERSECT INTERVAL INTO INVOKER IS ISNULL ISOLATION JOIN KEY LABEL LANGUAGE LARGE LAST LATERAL LC_COLLATE LC_CTYPE LEADING LEAKPROOF LEAST LEFT LEVEL LIKE LIMIT LISTEN LOAD LOCAL LOCALTIME LOCALTIMESTAMP LOCATION LOCK MAPPING MATCH MATERIALIZED MAXVALUE MINUTE MINVALUE MODE MONTH MOVE NAME NAMES NATIONAL NATURAL NCHAR NEXT NO NONE NOT NOTHING NOTIFY NOTNULL NOWAIT NULL NULLIF NULLS NUMERIC OBJECT OF OFF OFFSET OIDS ON ONLY OPERATOR OPTION OPTIONS OR ORDER ORDINALITY OUT OUTER OVER OVERLAPS OVERLAY OWNED OWNER PARSER PARTIAL PARTITION PASSING PASSWORD PLACING PLANS POSITION PRECEDING PRECISION PREPARE PREPARED PRESERVE PRIMARY PRIOR PRIVILEGES PROCEDURAL PROCEDURE PROGRAM QUOTE RANGE READ REAL REASSIGN RECHECK RECURSIVE REF REFERENCES REFRESH REINDEX RELATIVE RELEASE RENAME REPEATABLE REPLACE REPLICA RESET RESTART RESTRICT RETURNING RETURNS REVOKE RIGHT ROLE ROLLBACK ROW ROWS RULE SAVEPOINT SCHEMA SCROLL SEARCH SECOND SECURITY SELECT SEQUENCE SEQUENCES SERIALIZABLE SERVER SESSION SESSION_USER SET SETOF SHARE SHOW SIMILAR SIMPLE SMALLINT SNAPSHOT SOME STABLE STANDALONE START STATEMENT STATISTICS STDIN STDOUT STORAGE STRICT STRIP SUBSTRING SYMMETRIC SYSID SYSTEM TABLE TABLES TABLESPACE TEMP TEMPLATE TEMPORARY TEXT THEN TIME TIMESTAMP TO TRAILING TRANSACTION TREAT TRIGGER TRIM TRUE TRUNCATE TRUSTED TYPE TYPES UNBOUNDED UNCOMMITTED UNENCRYPTED UNION UNIQUE UNKNOWN UNLISTEN UNLOGGED UNTIL USER USING VACUUM VALID VALIDATE VALIDATOR VALUE VALUES VARCHAR VARIADIC VARYING VERBOSE VERSION VIEW VIEWS VOLATILE WHEN WHERE WHITESPACE WINDOW WITH WITHIN WITHOUT WORK WRAPPER WRITE XML XMLATTRIBUTES XMLCONCAT XMLELEMENT XMLEXISTS XMLFOREST XMLPARSE XMLPI XMLROOT XMLSERIALIZE YEAR YES ZONE");
             richTextBox2.SetKeywords(1, "update UPDATE");
-
+            listView3.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
+            listView3.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
 
         }
 
@@ -121,11 +129,11 @@ namespace LogMiner21341140
         {
             for (int i = 0; i < listView3.Items.Count; i++)
             {
-               
-                   if(listView3.Items[i].SubItems[0].Text!="LOP_DELETE_ROWS" && listView3.Items[i].SubItems[0].Text != "LOP_INSERT_ROWS" && listView3.Items[i].SubItems[0].Text != "LOP_MODIFY_ROW")
+
+                if (listView3.Items[i].SubItems[0].Text != "LOP_DELETE_ROWS" && listView3.Items[i].SubItems[0].Text != "LOP_INSERT_ROWS" && listView3.Items[i].SubItems[0].Text != "LOP_MODIFY_ROW")
                     listView3.Items.RemoveAt(i);
 
-              
+
             }
         }
 
@@ -179,7 +187,31 @@ namespace LogMiner21341140
             while (reader2.Read())
             {
                 listView3.Items[contador].SubItems[0].Text = reader2[0].ToString();
-                contador++;
+                if (contador < listView3.Items.Count - 1)
+                    contador++;
+            }
+
+            if (!reader2.HasRows)
+            {
+                int contador1 = 0;
+              
+                sql2 = "USE " + dbc.database +
+                  " SELECT [Operation],[Transaction ID] FROM sys.fn_dblog(NULL, NULL) WHERE AllocUnitName like 'dbo."+table+".PK%';";
+                var cmd1 = new SqlCommand(sql2, conn2);
+
+                var reader1 = cmd1.ExecuteReader();
+
+                while (reader1.Read())
+                {
+                   
+                        listView3.Items[contador1].SubItems[0].Text = reader1[0].ToString();
+                    
+                    if (contador1 < listView3.Items.Count-1)
+                    {
+                        contador1++;
+                    }
+                }
+
             }
 
         }
@@ -200,8 +232,9 @@ namespace LogMiner21341140
             if (!dbc.alltables)
             {
                 toCompare = new List<string>();
-                var query = "USE " + dbc.database +
-                     " SELECT [Transaction ID] FROM sys.fn_dblog(NULL, NULL) WHERE Context = 'LCX_HEAP' AND AllocUnitName ='dbo." + table+"';";
+               var query = "USE " + dbc.database +
+                    " SELECT [Transaction ID] FROM sys.fn_dblog(NULL, NULL) WHERE AllocUnitName like'dbo." + table + ".PK%';";
+              
                 var con = new SqlConnection(_connectionString);
                 var cmd3 = new SqlCommand(query, con);
                 con.Open();
@@ -211,59 +244,35 @@ namespace LogMiner21341140
                 {
                 toCompare.Add(reader3[0].ToString());   
                 }
-            }
 
+                if (!reader3.HasRows)
+                {
+                     query = "USE " + dbc.database +
+                   " SELECT [Transaction ID] FROM sys.fn_dblog(NULL, NULL) WHERE AllocUnitName = 'dbo." + table + "';";
+                    var cmd1 = new SqlCommand(query, con);
 
-            var sql = "";
-            if(dbc.alltables)
-                sql = "USE " + dbc.database + " SELECT [Operation], [Transaction ID],  SUSER_SNAME ([Transaction SID]) AS [USER], [Begin Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_BEGIN_XACT' AND Context = 'LCX_HEAP' ";
-           else if(!dbc.alltables && toCompare.Count>0)
-                sql = "USE " + dbc.database + " SELECT [Operation], [Transaction ID],  SUSER_SNAME ([Transaction SID]) AS [USER], [Begin Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_BEGIN_XACT' AND [Transaction ID] =" + "'" + toCompare[0] + "'";
-            if(sql!="")
-            CargarPrimeraParte(sql);
-            if(!dbc.alltables)
-            for(int i =1; i<toCompare.Count;i++)
-                CargarPrimeraParte("USE " + dbc.database + " SELECT [Operation], [Transaction ID],  SUSER_SNAME ([Transaction SID]) AS [USER], [Begin Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_BEGIN_XACT' AND [Transaction ID] =" + "'" + toCompare[i] + "'");
-          
-            var sql1 = "";
-             if (!dbc.alltables && toCompare.Count > 0)
-                    sql1 = "USE " + dbc.database +
-                       " SELECT [End Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_COMMIT_XACT'AND Context = 'LCX_HEAP' AND [Transaction ID] =" +
-                       "'" + toCompare[0] + "'";
+                    var reader1 = cmd1.ExecuteReader();
 
-            else
-                sql1 = "USE " + dbc.database +
-                       " SELECT [End Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_COMMIT_XACT' AND Context = 'LCX_HEAP'";
-            if (sql1 != "")
-                CargarParteDos(sql1);
-
-           
-
-            var sql2 = "";
-            if (!dbc.alltables)
-            {
-                sql2 = "USE " + dbc.database +
-                       " SELECT [Operation] FROM sys.fn_dblog(NULL, NULL) WHERE Context = 'LCX_HEAP' AND AllocUnitName ='dbo." + table + "'";
-                CargarParteTres(sql2);
-            }
-            else
-            {
-                for(int j = 0; j < listView3.Items.Count; j++) { 
-                sql2 = "USE " + dbc.database +
-                       " SELECT [Operation],[AllocUnitName] FROM sys.fn_dblog(NULL, NULL) WHERE Context = 'LCX_HEAP' AND AllocUnitName != '' and [Transaction ID] ='" + listView3.Items[j].SubItems[1].Text+"'";
-
-                    var conn2 = new SqlConnection(_connectionString);
-                    var cmd2 = new SqlCommand(sql2, conn2);
-                    conn2.Open();
-                    var reader2 = cmd2.ExecuteReader();
-               
-                    while (reader2.Read())
+                    while (reader1.Read())
                     {
-                        listView3.Items[j].SubItems[0].Text = reader2[0].ToString();
-                        listView3.Items[j].SubItems[2].Text = reader2[1].ToString().Replace("dbo.","");
+                        toCompare.Add(reader1[0].ToString());
                     }
+
                 }
             }
+
+           
+            var sql = "";
+           
+            if(!dbc.alltables)
+            for(int i =0; i<toCompare.Count;i++)
+                CargarPrimeraParte("USE " + dbc.database + " SELECT [Operation], [Transaction ID],  SUSER_SNAME ([Transaction SID]) AS [USER], [Begin Time] FROM sys.fn_dblog(NULL, NULL) WHERE [Operation] = 'LOP_BEGIN_XACT' AND [Transaction ID] =" + "'" + toCompare[i] + "'");
+
+
+            if (!dbc.alltables)     
+                    CargarParteTres("USE " + dbc.database + " SELECT [Operation] FROM sys.fn_dblog(NULL, NULL) WHERE AllocUnitName = 'dbo." + table + "'; ");
+
+
         }
 
         public void FirstTab(string thistb,string transid)
@@ -298,15 +307,20 @@ namespace LogMiner21341140
 
             List<string> valores;
 
+            for (int i = 0; i < listView3.Items.Count; i++)
+            {
+                if (listView3.Items[i].SubItems[0].Text == "LOP_INSERT_ROWS")
+                    anyinsert = listView3.Items[i].SubItems[1].Text;
+            }
             for (int i = 0; i < rowlog.Count; i++)
             {
                 valores = new List<string>();
-
                 if (tipo == "LOP_MODIFY_ROW")
                 {
-                    var rowlog1 = new MetaDataParser().GetRowLogContentsCero(dbc.database, tab, "LOP_INSERT_ROWS", "");
+                    var rowlog1 = new MetaDataParser().GetRowLogContentsCero(dbc.database, tab, "LOP_INSERT_ROWS", anyinsert);
                     cantidad = RowLogConversions.CantidadLongitudFija(rowlog1[0], metadata);
                 }
+
 
 
                 var values = converter.ParseRowLogContents(rowlog[i], metadata, tipo, cantidad);
@@ -321,41 +335,47 @@ namespace LogMiner21341140
                     {
                         listView1.Items[j].SubItems[3].Text = values.ElementAt(j);
                     }
-                    string undo = "";
+                  
                     if (tipo == "LOP_MODIFY_ROW")
                     {
 
-                        undo = "";
 
+                        undoupdate = "";
+                        complete = "";
 
-
-                        undo += "UPDATE " + dbc.database + " SET ";
+                        complete += "UPDATE " + dbc.database + " SET ";
+                        undoupdate += " WHERE ";
                         for (int k = 0; k < values.Count; k++)
                         {
+
                             if (metadata[k].Type == ColumnType.Char || metadata[k].Type == ColumnType.VarChar)
                             {
 
-                                undo += metadata.ElementAt(k).ColumnName + " = '" + values.ElementAt(k) + "'";
+                                undoupdate += metadata.ElementAt(k).ColumnName + " = '" + values.ElementAt(k) + "'";
+                                complete += metadata.ElementAt(k).ColumnName + " = '" + values.ElementAt(k) + "'";
                             }
                             else
                             {
 
-                                undo += metadata.ElementAt(k).ColumnName + " = " + values.ElementAt(k);
+                                undoupdate += metadata.ElementAt(k).ColumnName + " = " + values.ElementAt(k);
+                                complete += metadata.ElementAt(k).ColumnName + " = " + values.ElementAt(k);
                             }
                             if (k < values.Count - 1)
                             {
 
-                                undo += " AND ";
+                                undoupdate += " AND ";
+                                complete += " AND ";
                             }
                             if (k == values.Count - 1)
                             {
 
-                                undo += ";";
+                                undoupdate += ";";
+                               
                             }
                         }
 
-                        richTextBox2.Text = undo;
-
+                        richTextBox1.Text += undoupdate;
+                        richTextBox2.Text += complete + redoupdate;
                     }
                 }
             }
@@ -377,14 +397,18 @@ namespace LogMiner21341140
             var converter = new RowLogConversions();
 
             List<string> valores;
-        
+            for (int i = 0; i < listView3.Items.Count; i++)
+            {
+                if (listView3.Items[i].SubItems[0].Text == "LOP_INSERT_ROWS")
+                    anyinsert = listView3.Items[i].SubItems[1].Text;
+            }
             for (int i = 0; i < rowlog.Count; i++)
             {
                 valores = new List<string>();
 
                 if (tipo == "LOP_MODIFY_ROW")
                 {
-                    var rowlog1 = new MetaDataParser().GetRowLogContentsCero(dbc.database, tab, "LOP_INSERT_ROWS","");
+                    var rowlog1 = new MetaDataParser().GetRowLogContentsCero(dbc.database, tab, "LOP_INSERT_ROWS",anyinsert);
                     cantidad = RowLogConversions.CantidadLongitudFija(rowlog1[0], metadata);
                 }
 
@@ -478,37 +502,41 @@ namespace LogMiner21341140
                     else if (tipo == "LOP_MODIFY_ROW")
                     {
                       
-                        undo = "";
-
+                        undoupdate = "";
+                        redoupdate = " WHERE ";
 
                       
-                        undo += "UPDATE " + dbc.database + " SET ";
+                        undoupdate += "UPDATE " + dbc.database + " SET ";
                         for (int k = 0; k < values.Count; k++)
                         {
                             if (metadata[k].Type == ColumnType.Char || metadata[k].Type == ColumnType.VarChar)
                             {
                 
-                                undo += metadata.ElementAt(k).ColumnName + " = '" + values.ElementAt(k) + "'";
+                                undoupdate += metadata.ElementAt(k).ColumnName + " = '" + values.ElementAt(k) + "'";
+                                redoupdate += metadata.ElementAt(k).ColumnName + " = '" + values.ElementAt(k) + "'";
+
                             }
                             else
                             {
                                 
-                                undo += metadata.ElementAt(k).ColumnName + " = " + values.ElementAt(k);
+                                undoupdate += metadata.ElementAt(k).ColumnName + " = " + values.ElementAt(k);
+                                redoupdate += metadata.ElementAt(k).ColumnName + " = " + values.ElementAt(k);
                             }
                             if (k < values.Count - 1)
                             {
                              
-                                undo += " AND ";
+                                undoupdate += " AND ";
+                                redoupdate += " AND ";
                             }
                             if (k == values.Count - 1)
                             {
                               
-                                undo += ";";
+                               redoupdate += ";";
                             }
                         }
 
-                        richTextBox1.Text = undo;
-             
+                        richTextBox1.Text = undoupdate;
+                      
                     }
                 }
             }
@@ -538,6 +566,7 @@ namespace LogMiner21341140
 
         }
 
+
         private void buttonItem14_Click(object sender, EventArgs e)
         {
             DatabaseConnection dtbc = new DatabaseConnection();
@@ -547,11 +576,15 @@ namespace LogMiner21341140
             database = dbc.database;
             FillList();
             deleteOps();
+            listView1.Clear();
+            richTextBox1.Clear();
+            richTextBox2.Clear();
         }
 
         private void buttonItem15_Click(object sender, EventArgs e)
         {
-            dbc.ShowDialog();
+            dbc.comboBox1.Enabled = false;
+            dbc.ShowDialog();       
             database = dbc.database;
             table = dbc.table;
             FillList();
@@ -570,8 +603,20 @@ namespace LogMiner21341140
 
         private void listView3_DoubleClick(object sender, EventArgs e)
         {
-            tipo = listView3.SelectedItems[0].SubItems[0].Text;
-            FirstTab(listView3.SelectedItems[0].SubItems[2].Text, listView3.SelectedItems[0].SubItems[1].Text);
+            try
+            {
+                tipo = listView3.SelectedItems[0].SubItems[0].Text;
+                FirstTab(listView3.SelectedItems[0].SubItems[2].Text, listView3.SelectedItems[0].SubItems[1].Text);
+            }
+            catch (Exception x)
+            {
+                MessageBox.Show("Modify is From Insert");
+            }
+        }
+
+        private void listView3_SelectedIndexChanged_1(object sender, EventArgs e)
+        {
+
         }
     }
 }
